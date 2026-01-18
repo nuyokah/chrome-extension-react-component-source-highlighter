@@ -551,6 +551,93 @@ class ReactComponentHighlighter {
     );
   }
 
+  // Check if a component is a wrapper type that typically doesn't have useful source info
+  private isWrapperComponent(fiber: FiberNode): boolean {
+    const { tag, type } = fiber;
+
+    // Context providers/consumers never have source
+    if (tag === FiberTags.ContextProvider || tag === FiberTags.ContextConsumer) {
+      return true;
+    }
+
+    // Suspense doesn't have source
+    if (tag === FiberTags.SuspenseComponent) {
+      return true;
+    }
+
+    // Check for common wrapper component names that are typically not useful
+    const name = this.getComponentName(fiber);
+    const wrapperNames = [
+      'Provider',
+      'Consumer',
+      'Context',
+      'Fragment',
+      'Suspense',
+      'StrictMode',
+      'Profiler',
+      // Common library wrappers
+      'Router',
+      'BrowserRouter',
+      'HashRouter',
+      'MemoryRouter',
+      'StaticRouter',
+      'ThemeProvider',
+      'StylesProvider',
+      'QueryClientProvider',
+      'ReduxProvider',
+    ];
+
+    // Check if the name matches common wrapper patterns
+    if (wrapperNames.some(w => name === w || name.endsWith('.Provider') || name.endsWith('.Consumer'))) {
+      return true;
+    }
+
+    return false;
+  }
+
+  // Check if a component should be shown (has source or is a meaningful component)
+  private shouldShowComponent(fiber: FiberNode): boolean {
+    // Skip wrapper components (Context, Suspense, etc.)
+    if (this.isWrapperComponent(fiber)) {
+      return false;
+    }
+
+    const { tag } = fiber;
+    const name = this.getComponentName(fiber);
+
+    // Get source info - if it has source, definitely show it
+    const { fileName } = this.getSourceInfo(fiber);
+    if (fileName) {
+      return true;
+    }
+
+    // Skip ForwardRef components without source (like styled-components)
+    // The parent component that uses the styled component will have the source
+    if (tag === FiberTags.ForwardRef) {
+      return false;
+    }
+
+    // Skip Memo components without source
+    if (tag === FiberTags.MemoComponent || tag === FiberTags.SimpleMemoComponent) {
+      // Only show if there's a meaningful inner name
+      if (name.startsWith('Memo(') && (name.includes('Anonymous') || name === 'Memo')) {
+        return false;
+      }
+    }
+
+    // Skip components with non-meaningful names and no source
+    if (name === 'Unknown' || name === 'Anonymous') {
+      return false;
+    }
+
+    // Skip styled-components patterns (they create ForwardRef wrappers)
+    if (name.startsWith('Styled(') || name.startsWith('styled.')) {
+      return false;
+    }
+
+    return true;
+  }
+
   private getComponentsFromFiber(
     fiber: FiberNode | null,
     element: Element,
@@ -566,7 +653,8 @@ class ReactComponentHighlighter {
 
     // Traverse up the fiber tree to find React components
     while (currentFiber && components.length < this.state.maxNestingLevel) {
-      if (this.isReactComponent(currentFiber)) {
+      // Check if this is a React component AND should be shown (not a wrapper)
+      if (this.isReactComponent(currentFiber) && this.shouldShowComponent(currentFiber)) {
         const name = this.getComponentName(currentFiber);
         const { fileName, lineNumber, source } = this.getSourceInfo(currentFiber);
 
@@ -626,13 +714,13 @@ class ReactComponentHighlighter {
       const fiber = this.getFiberFromElement(currentElement);
 
       if (fiber) {
-        // Find the nearest React component for this DOM element
-        let componentFiber = fiber;
-        while (componentFiber && !this.isReactComponent(componentFiber)) {
-          componentFiber = componentFiber.return!;
+        // Find the nearest React component for this DOM element that should be shown
+        let componentFiber: FiberNode | null = fiber;
+        while (componentFiber && !(this.isReactComponent(componentFiber) && this.shouldShowComponent(componentFiber))) {
+          componentFiber = componentFiber.return;
         }
 
-        if (componentFiber && this.isReactComponent(componentFiber)) {
+        if (componentFiber && this.isReactComponent(componentFiber) && this.shouldShowComponent(componentFiber)) {
           const name = this.getComponentName(componentFiber);
           const { fileName, lineNumber, source } = this.getSourceInfo(componentFiber);
 
