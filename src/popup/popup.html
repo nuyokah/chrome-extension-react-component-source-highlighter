@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React Component Highlighter</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="2.5" fill="#61dafb"/>
+          <ellipse cx="12" cy="12" rx="10" ry="4" stroke="#61dafb" stroke-width="1.5" fill="none"/>
+          <ellipse cx="12" cy="12" rx="10" ry="4" stroke="#61dafb" stroke-width="1.5" fill="none" transform="rotate(60 12 12)"/>
+          <ellipse cx="12" cy="12" rx="10" ry="4" stroke="#61dafb" stroke-width="1.5" fill="none" transform="rotate(120 12 12)"/>
+        </svg>
+        <h1>React Highlighter</h1>
+      </div>
+      <span id="status" class="status">Detecting...</span>
+    </header>
+
+    <main>
+      <div class="control-group">
+        <label class="toggle-label">
+          <span>Enable Highlighting</span>
+          <div class="toggle-switch">
+            <input type="checkbox" id="enableToggle">
+            <span class="toggle-slider"></span>
+          </div>
+        </label>
+      </div>
+
+      <div class="control-group">
+        <label for="nestingLevel">Nesting Levels</label>
+        <div class="slider-container">
+          <input type="range" id="nestingLevel" min="1" max="10" value="3">
+          <span id="nestingValue" class="slider-value">3</span>
+        </div>
+        <p class="hint">Number of parent components to show</p>
+      </div>
+
+      <div class="control-group">
+        <label>Tree Type</label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="treeType" value="react" checked>
+            <span class="radio-custom"></span>
+            <span>React Tree</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="treeType" value="dom">
+            <span class="radio-custom"></span>
+            <span>DOM Tree</span>
+          </label>
+        </div>
+        <p class="hint">React tree shows component hierarchy; DOM tree follows HTML structure</p>
+      </div>
+    </main>
+
+    <footer>
+      <p>Hover over elements to see React components</p>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
