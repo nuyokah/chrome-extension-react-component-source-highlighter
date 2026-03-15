@@ -33,6 +33,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     );
     sendResponse({ success: true });
   }
+
+  if (message.type === 'TRACE_SELECTOR') {
+    // Forward trace request to injected script
+    window.postMessage(
+      {
+        source: 'react-component-highlighter-extension',
+        type: 'TRACE_SELECTOR',
+        violation: message.violation,
+      },
+      '*'
+    );
+    sendResponse({ success: true });
+  }
+
   return true;
 });
 
@@ -59,6 +73,14 @@ window.addEventListener('message', (event) => {
 
   if (type === 'REACT_DETECTED') {
     console.log('[React Highlighter] React detected:', data);
+  }
+
+  if (type === 'TRACE_RESULT') {
+    // Forward trace result back to background script
+    chrome.runtime.sendMessage({
+      type: 'TRACE_RESULT',
+      payload: event.data.payload,
+    });
   }
 });
 

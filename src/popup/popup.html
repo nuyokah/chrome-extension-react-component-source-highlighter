@@ -59,6 +59,27 @@
       </div>
     </main>
 
+    <section class="a11y-section">
+      <div class="a11y-header">
+        <h2 class="section-title">A11y Bridge</h2>
+        <span id="vsCodeStatus" class="vscode-badge disconnected">VS Code: Not connected</span>
+      </div>
+
+      <div class="control-group">
+        <label for="a11ySelector">CSS Selector</label>
+        <textarea id="a11ySelector" rows="2" placeholder="#main > button.submit-btn"></textarea>
+        <p class="hint">Paste selector from axe-core or Lighthouse report</p>
+      </div>
+
+      <div class="control-group">
+        <label for="a11yViolation">Violation Description</label>
+        <input type="text" id="a11yViolation" placeholder="Button missing accessible name (WCAG 4.1.2)">
+      </div>
+
+      <button id="sendToVSCode" class="send-btn" disabled>Trace &amp; Send to VS Code</button>
+      <p id="traceStatus" class="trace-status"></p>
+    </section>
+
     <footer>
       <p>Hover over elements to see React components</p>
     </footer>

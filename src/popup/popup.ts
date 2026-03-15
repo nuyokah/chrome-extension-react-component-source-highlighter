@@ -18,6 +18,13 @@ class PopupController {
   private domTreeRadio: HTMLInputElement;
   private statusEl: HTMLElement;
 
+  // A11y Bridge elements
+  private vsCodeStatusEl: HTMLElement;
+  private a11ySelectorEl: HTMLTextAreaElement;
+  private a11yViolationEl: HTMLInputElement;
+  private sendBtn: HTMLButtonElement;
+  private traceStatusEl: HTMLElement;
+
   constructor() {
     this.enableToggle = document.getElementById('enableToggle') as HTMLInputElement;
     this.nestingLevel = document.getElementById('nestingLevel') as HTMLInputElement;
@@ -25,6 +32,12 @@ class PopupController {
     this.reactTreeRadio = document.querySelector('input[value="react"]') as HTMLInputElement;
     this.domTreeRadio = document.querySelector('input[value="dom"]') as HTMLInputElement;
     this.statusEl = document.getElementById('status') as HTMLElement;
+
+    this.vsCodeStatusEl = document.getElementById('vsCodeStatus') as HTMLElement;
+    this.a11ySelectorEl = document.getElementById('a11ySelector') as HTMLTextAreaElement;
+    this.a11yViolationEl = document.getElementById('a11yViolation') as HTMLInputElement;
+    this.sendBtn = document.getElementById('sendToVSCode') as HTMLButtonElement;
+    this.traceStatusEl = document.getElementById('traceStatus') as HTMLElement;
 
     this.init();
   }
@@ -34,6 +47,8 @@ class PopupController {
     this.setupEventListeners();
     this.updateUI();
     this.checkReactStatus();
+    this.checkVSCodeConnection();
+    this.listenForVSCodeStatus();
   }
 
   private async loadState() {
@@ -76,6 +91,68 @@ class PopupController {
         this.saveState();
       }
     });
+
+    // A11y Bridge: send button
+    this.sendBtn.addEventListener('click', () => {
+      const selector = this.a11ySelectorEl.value.trim();
+      if (!selector) return;
+
+      this.traceStatusEl.textContent = 'Tracing...';
+      this.traceStatusEl.className = 'trace-status pending';
+      this.sendBtn.disabled = true;
+
+      chrome.runtime.sendMessage(
+        {
+          type: 'SEND_TO_VSCODE',
+          violation: {
+            selector,
+            violationDescription: this.a11yViolationEl.value.trim(),
+          },
+        },
+        () => {
+          this.sendBtn.disabled = false;
+          this.traceStatusEl.textContent = 'Sent to VS Code';
+          this.traceStatusEl.className = 'trace-status success';
+        }
+      );
+    });
+
+    // Enable send button only when selector is non-empty
+    this.a11ySelectorEl.addEventListener('input', () => {
+      this.updateSendButton();
+    });
+  }
+
+  private updateSendButton() {
+    const hasSelector = this.a11ySelectorEl.value.trim().length > 0;
+    // Check connection status from badge class
+    const isConnected = this.vsCodeStatusEl.classList.contains('connected');
+    this.sendBtn.disabled = !(hasSelector && isConnected);
+  }
+
+  private checkVSCodeConnection() {
+    chrome.runtime.sendMessage({ type: 'CHECK_VSCODE_CONNECTION' }, (response) => {
+      this.setVSCodeStatus(response?.connected ?? false);
+    });
+  }
+
+  private listenForVSCodeStatus() {
+    chrome.runtime.onMessage.addListener((message) => {
+      if (message.type === 'VSCODE_CONNECTED') {
+        this.setVSCodeStatus(message.connected);
+      }
+    });
+  }
+
+  private setVSCodeStatus(connected: boolean) {
+    if (connected) {
+      this.vsCodeStatusEl.textContent = 'VS Code: Connected';
+      this.vsCodeStatusEl.className = 'vscode-badge connected';
+    } else {
+      this.vsCodeStatusEl.textContent = 'VS Code: Not connected';
+      this.vsCodeStatusEl.className = 'vscode-badge disconnected';
+    }
+    this.updateSendButton();
   }
 
   private updateUI() {

@@ -17,6 +17,37 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.set({ state: defaultState });
 });
 
+// WebSocket connection to VS Code companion extension
+const WS_PORT = 7891;
+let ws: WebSocket | null = null;
+
+function connectToVSCode() {
+  try {
+    ws = new WebSocket(`ws://localhost:${WS_PORT}`);
+
+    ws.onopen = () => {
+      // Notify any open popups that VS Code is connected
+      chrome.runtime.sendMessage({ type: 'VSCODE_CONNECTED', connected: true }).catch(() => {});
+    };
+
+    ws.onclose = () => {
+      ws = null;
+      chrome.runtime.sendMessage({ type: 'VSCODE_CONNECTED', connected: false }).catch(() => {});
+      // Retry after 5 seconds
+      setTimeout(connectToVSCode, 5000);
+    };
+
+    ws.onerror = () => {
+      // onclose fires after onerror — retry handled there
+    };
+  } catch {
+    ws = null;
+    setTimeout(connectToVSCode, 5000);
+  }
+}
+
+connectToVSCode();
+
 // Handle messages from popup and content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'GET_STATE') {
@@ -61,6 +92,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse(newState);
       });
     });
+    return true;
+  }
+
+  if (message.type === 'SEND_TO_VSCODE') {
+    // Forward trace request to the active tab's content script
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.id) {
+        chrome.tabs.sendMessage(tabs[0].id, {
+          type: 'TRACE_SELECTOR',
+          violation: message.violation,
+        }).catch(() => {});
+      }
+    });
+    sendResponse({ success: true });
+    return true;
+  }
+
+  if (message.type === 'TRACE_RESULT') {
+    // Send result over WebSocket to VS Code if connected
+    if (ws && ws.readyState === WebSocket.OPEN && message.payload) {
+      ws.send(JSON.stringify({
+        type: 'A11Y_COMPONENT',
+        payload: message.payload,
+      }));
+    }
+    sendResponse({ success: true });
+    return true;
+  }
+
+  if (message.type === 'CHECK_VSCODE_CONNECTION') {
+    sendResponse({ connected: ws?.readyState === WebSocket.OPEN });
     return true;
   }
 });

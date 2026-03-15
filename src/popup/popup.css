@@ -234,3 +234,105 @@ footer p {
   opacity: 0.5;
   pointer-events: none;
 }
+
+/* A11y Bridge Section */
+.a11y-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.a11y-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.vscode-badge {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.vscode-badge.connected {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+}
+
+.vscode-badge.disconnected {
+  background: rgba(113, 113, 122, 0.2);
+  color: #71717a;
+}
+
+.a11y-section textarea,
+.a11y-section input[type="text"] {
+  width: 100%;
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  color: #e4e4e7;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 8px 10px;
+  outline: none;
+  resize: none;
+  transition: border-color 0.2s;
+}
+
+.a11y-section textarea:focus,
+.a11y-section input[type="text"]:focus {
+  border-color: #61dafb;
+}
+
+.a11y-section textarea {
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+}
+
+.send-btn {
+  width: 100%;
+  padding: 9px 16px;
+  background: #61dafb;
+  color: #0a0a0f;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, background 0.2s;
+}
+
+.send-btn:hover:not(:disabled) {
+  background: #7ee3fc;
+}
+
+.send-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.trace-status {
+  font-size: 11px;
+  text-align: center;
+  min-height: 16px;
+  color: #71717a;
+}
+
+.trace-status.success {
+  color: #4caf50;
+}
+
+.trace-status.pending {
+  color: #ffc107;
+}

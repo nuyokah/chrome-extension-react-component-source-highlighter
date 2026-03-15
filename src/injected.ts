@@ -158,12 +158,32 @@ class ReactComponentHighlighter {
     );
   }
 
+  private traceSelector(selector: string): ComponentInfo | null {
+    try {
+      const element = document.querySelector(selector);
+      if (!element) return null;
+
+      const fiber = this.getFiberFromElement(element);
+
+      let components: ComponentInfo[];
+      if (this.state.showReactTree && fiber) {
+        components = this.getComponentsFromFiber(fiber, element);
+      } else {
+        components = this.getComponentsFromDOM(element);
+      }
+
+      return components[0] ?? null;
+    } catch {
+      return null;
+    }
+  }
+
   private setupMessageListener() {
     window.addEventListener('message', (event) => {
       if (event.source !== window) return;
       if (event.data?.source !== 'react-component-highlighter-extension') return;
 
-      const { type, state } = event.data;
+      const { type, state, violation } = event.data;
 
       if (type === 'STATE_CHANGED' && state) {
         const wasEnabled = this.state.enabled;
@@ -177,6 +197,34 @@ class ReactComponentHighlighter {
           // Settings changed, refresh highlights
           this.refreshHighlights();
         }
+      }
+
+      if (type === 'TRACE_SELECTOR' && violation) {
+        const result = this.traceSelector(violation.selector);
+
+        // Flash a visual highlight so the user sees which element was matched
+        if (result) {
+          this.renderHighlights([result]);
+        }
+
+        window.postMessage(
+          {
+            source: 'react-component-highlighter-page',
+            type: 'TRACE_RESULT',
+            payload: result
+              ? {
+                  violation,
+                  component: {
+                    name: result.name,
+                    source: result.source,
+                    fileName: result.fileName,
+                    lineNumber: result.lineNumber,
+                  },
+                }
+              : null,
+          },
+          '*'
+        );
       }
     });
 
